@@ -12,8 +12,8 @@ impl Polynomial {
         }
     }
 
-    pub fn uniform_random(rho: &[u8], nonce: usize) -> Self {
-        Self::zeroes()
+    pub fn set(&mut self, idx: usize, value: usize) {
+        self.coefficients[idx] = value;
     }
 }
 

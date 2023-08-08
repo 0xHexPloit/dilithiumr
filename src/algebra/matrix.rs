@@ -1,6 +1,6 @@
 use super::poly::Polynomial;
 
-
+#[derive(Debug)]
 pub struct PolyMatrix<const K: usize, const L: usize> {
     data: [[Polynomial; L]; K]
 }
@@ -11,10 +11,9 @@ impl <const K: usize, const L: usize>PolyMatrix<K, L> {
         Self {data}
     }
 
-
-    pub fn set(&mut self, i: usize, j: usize, poly: Polynomial) {
-        let stored_poly = self.data.get_mut(i).expect("").get_mut(j).expect("");
-        *stored_poly = poly;
+    pub fn get_mut(&mut self, i: usize, j: usize) -> &mut Polynomial {
+        let poly = self.data.get_mut(i).unwrap().get_mut(j).unwrap();
+        poly
     }
 }
 
