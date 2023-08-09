@@ -1,4 +1,3 @@
-use crate::algebra::matrix::PolyMatrix;
 use crate::helper::{expand_a, random_bytes, shake_256};
 
 pub struct Dilithium<
