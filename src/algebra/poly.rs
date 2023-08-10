@@ -1,9 +1,9 @@
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 use crate::constants::N;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Polynomial {
-    coefficients: [i32; N],
+    pub (crate) coefficients: [i32; N],
 }
 
 impl Polynomial {
@@ -29,5 +29,11 @@ impl Index<usize> for Polynomial {
     type Output = i32;
     fn index(&self, index: usize) -> &Self::Output {
         &self.coefficients[index]
+    }
+}
+
+impl IndexMut<usize> for Polynomial {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.coefficients[index]
     }
 }
