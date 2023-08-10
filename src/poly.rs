@@ -1,6 +1,6 @@
 use sha3::digest::XofReader;
 use crate::algebra::poly::Polynomial;
-use crate::constants::{N, Q, REJ_UNIFORM_BUFLEN, STREAM128_BLOCKBYTES, ZETAS};
+use crate::constants::{N, POLY_UNIFORM_ETA_2_NB_BLOCKS, POLY_UNIFORM_ETA_4_NB_BLOCKS, Q, REJ_UNIFORM_BUFLEN, STREAM128_BLOCKBYTES, ZETAS};
 use crate::helper::shake_256_reader;
 use crate::reduce::montgomery_reduce;
 
@@ -24,7 +24,7 @@ fn rejection_uniform(
         coefficient_value &= 0x7FFFFF; // Logical and between b2 and 2**128-1
 
         if coefficient_value < Q as i32 {
-            poly.set(offset + counter, coefficient_value );
+            poly[offset + counter] = coefficient_value;
             counter += 1;
         }
     }
@@ -32,25 +32,37 @@ fn rejection_uniform(
     counter
 }
 
-/// This function fills the coefficients of a polynomial with values sampled from [0, Q-1].
-///
-/// # Arguments
-/// * `rho` -  An array containing 32 random bytes
-/// * `nonce` - A random integer
-/// * `poly` - A polynomial from which the coefficients will be converted into the NTT domain.
-pub fn poly_fill_uniform_random(rho: &[u8], nonce: usize, poly: &mut Polynomial) {
+fn rejection_eta<const ETA: usize>(
+    poly: &mut Polynomial,
+    remaining_coefficients: usize,
+    offset: usize,
+    buffer: &[u8],
+    buffer_len: usize
+) -> usize {
+    0
+}
+
+
+fn poly_fill_uniform_random_base<const ARR_SIZE: usize>(
+    rho: &[u8],
+    nonce: u16,
+    poly:
+    &mut Polynomial,
+    rejection_fn: impl Fn(&mut Polynomial, usize, usize, &[u8], usize) -> usize
+)
+{
     let mut xof_input = [0u8; 32 + 2];
     xof_input[..32].copy_from_slice(rho);
     xof_input[32] = (nonce & 0xFF) as u8;
     xof_input[33] = ((nonce >> 8)  & 0xFF) as u8;
 
     let mut reader = shake_256_reader(&xof_input);
-    let mut buffer = [0u8; REJ_UNIFORM_BUFLEN];
-    let mut buffer_len = REJ_UNIFORM_BUFLEN;
+    let mut buffer = [0u8; ARR_SIZE];
+    let mut buffer_len = ARR_SIZE;
     reader.read(&mut buffer);
 
 
-    let mut counter = rejection_uniform(
+    let mut counter = rejection_fn(
         poly,
         N,
         0,
@@ -65,7 +77,7 @@ pub fn poly_fill_uniform_random(rho: &[u8], nonce: usize, poly: &mut Polynomial)
         }
         reader.read(&mut buffer[offset..STREAM128_BLOCKBYTES]);
         buffer_len = STREAM128_BLOCKBYTES + offset;
-        counter += rejection_uniform(
+        counter += rejection_fn(
             poly,
             N - counter,
             counter,
@@ -73,6 +85,41 @@ pub fn poly_fill_uniform_random(rho: &[u8], nonce: usize, poly: &mut Polynomial)
             buffer_len
         );
     }
+}
+
+
+pub fn poly_fill_uniform_random_using_eta<const ETA: usize>(rho: &[u8], nonce: u16, poly: &mut Polynomial) {
+    if ETA == 2 {
+        poly_fill_uniform_random_base::<POLY_UNIFORM_ETA_2_NB_BLOCKS>(
+            rho,
+            nonce,
+            poly,
+            rejection_eta::<ETA>
+        );
+    } else {
+        poly_fill_uniform_random_base::<POLY_UNIFORM_ETA_4_NB_BLOCKS>(
+            rho,
+            nonce,
+            poly,
+            rejection_eta::<ETA>
+        );
+    }
+}
+
+
+/// This function fills the coefficients of a polynomial with values sampled from [0, Q-1].
+///
+/// # Arguments
+/// * `rho` -  An array containing 32 random bytes
+/// * `nonce` - A random integer
+/// * `poly` - A polynomial from which the coefficients will be converted into the NTT domain.
+pub fn poly_fill_uniform_random(rho: &[u8], nonce: u16, poly: &mut Polynomial) {
+    poly_fill_uniform_random_base::<REJ_UNIFORM_BUFLEN>(
+        rho,
+        nonce,
+        poly,
+        rejection_uniform
+    );
 }
 
 

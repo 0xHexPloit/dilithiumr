@@ -13,9 +13,7 @@ impl Polynomial {
         }
     }
 
-    pub fn set(&mut self, idx: usize, value: i32) {
-        self.coefficients[idx] = value;
-    }
+
 }
 
 
