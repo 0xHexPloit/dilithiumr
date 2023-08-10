@@ -1,8 +1,9 @@
-use crate::helper::{expand_a, random_bytes, shake_256};
+use crate::helper::{expand_a, expand_s, random_bytes, shake_256};
 
 pub struct Dilithium<
     const K: usize,
     const L: usize,
+    const ETA: usize,
     const SIGNATURE_KEY_SIZE: usize,
     const PUBLIC_KEY_SIZE: usize,
 >;
@@ -11,11 +12,13 @@ pub struct Dilithium<
 impl <
     const K: usize,
     const L: usize,
+    const ETA: usize,
     const SIGNATURE_KEY_SIZE: usize,
     const PUBLIC_KEY_SIZE: usize,
 >Dilithium<
     K,
     L,
+    ETA,
     SIGNATURE_KEY_SIZE,
     PUBLIC_KEY_SIZE,
 > {
@@ -29,7 +32,7 @@ impl <
 
         let a_matrix = expand_a::<K, L>(rho);
 
-        println!("{:?}", a_matrix);
+        let (s_one, s_two) = expand_s::<L, K, ETA>(rho_prime);
 
         let signature_key = [0u8; SIGNATURE_KEY_SIZE];
         let public_key = [0u8; PUBLIC_KEY_SIZE];
