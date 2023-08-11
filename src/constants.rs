@@ -1,17 +1,37 @@
 pub const Q: u32 = 8380417; // 2**23 - 2**13 + 1;
 pub const Q_INVERSE: i32 = 58728449; // Q^(-1) mod 2**32 <- T
 pub const D: u8 = 13; // Dropped bits from t
+
+pub const ZETA_BYTES: usize = 32;
+
+pub const SEED_BYTES: usize = 128;
+pub const RHO_BYTES: usize = 32;
+
+pub const TR_BYTES: usize = 32;
+
+pub const BIG_K_BYTES: usize = 32;
+
 pub const N: usize = 256; // Ring degree
+
+pub const POLY_T0_PACKED_BYTES: usize = 416;
+pub const POLY_T1_PACKED_BYTES: usize = 320;
 
 
 const SHAKE128_RATE: usize = 168;
 pub const STREAM128_BLOCKBYTES: usize = SHAKE128_RATE;
 
+const SHAKE256_RATE: usize = 132;
+pub const STREAM256_BLOCKBYTES: usize = SHAKE256_RATE;
+
 const REJ_UNIFORM_NBLOCKS: usize  = (768 + STREAM128_BLOCKBYTES - 1) / STREAM128_BLOCKBYTES;
 pub const REJ_UNIFORM_BUFLEN: usize = REJ_UNIFORM_NBLOCKS * STREAM128_BLOCKBYTES;
 
-pub const POLY_UNIFORM_ETA_2_NB_BLOCKS: usize = (136 + STREAM128_BLOCKBYTES - 1 ) / STREAM128_BLOCKBYTES;
-pub const POLY_UNIFORM_ETA_4_NB_BLOCKS: usize = (227 + STREAM128_BLOCKBYTES - 1) / STREAM128_BLOCKBYTES;
+const POLY_UNIFORM_ETA_2_NB_BLOCKS: usize = (136 + STREAM128_BLOCKBYTES - 1 ) / STREAM128_BLOCKBYTES;
+const POLY_UNIFORM_ETA_4_NB_BLOCKS: usize = (227 + STREAM128_BLOCKBYTES - 1) / STREAM128_BLOCKBYTES;
+
+pub const POLY_UNIFORM_ETA_2_BUFLEN: usize = POLY_UNIFORM_ETA_2_NB_BLOCKS * STREAM256_BLOCKBYTES;
+pub const POLY_UNIFORM_ETA_4_BUFLEN: usize = POLY_UNIFORM_ETA_4_NB_BLOCKS * STREAM256_BLOCKBYTES;
+
 
 
 pub const ZETAS: [i32; 256] = [
