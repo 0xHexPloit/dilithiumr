@@ -33,14 +33,11 @@ pub fn shake_256<const N: usize>(input: &[u8]) -> [u8; N] {
 }
 
 pub fn expand_a<const K: usize, const L: usize>(rho: &[u8]) -> PolyMatrix<K, L> {
-    let matrix = PolyMatrix::<K, L>::default();
-
-
+    let mut matrix = PolyMatrix::<K, L>::default();
     for i in 0..K {
         for j in 0..L {
-            let mut poly = matrix[i][j];
-            Polynomial::fill_uniform_random(rho, ((i << 8) + j ) as u16, &mut poly);
-            poly.ntt()
+            let poly = &mut matrix[i][j];
+            Polynomial::fill_uniform_random(rho, ((i << 8) + j ) as u16, poly);
         }
     }
 
@@ -51,15 +48,15 @@ pub fn expand_s<const K: usize, const L: usize, const ETA: usize>(rho_prime: &[u
     let mut vec_one = PolyVec::<K>::default();
     let mut nonce = 0u16;
     vec_one.iter_mut().for_each(|poly| {
-        nonce += 1;
         Polynomial::fill_uniform_random_using_eta::<ETA>(rho_prime, nonce, poly);
+        nonce += 1
     });
 
     nonce = L as u16;
     let mut vec_two = PolyVec::<L>::default();
     vec_two.iter_mut().for_each(|poly| {
-        nonce += 1;
         Polynomial::fill_uniform_random_using_eta::<ETA>(rho_prime, nonce, poly);
+        nonce += 1;
     });
 
     (vec_one, vec_two)

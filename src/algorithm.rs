@@ -25,8 +25,15 @@ impl <
     PUBLIC_KEY_SIZE,
 > {
 
-    pub fn keygen(&self) -> ([u8; SIGNATURE_KEY_SIZE], [u8; PUBLIC_KEY_SIZE]) {
-        let zeta = random_bytes::<ZETA_BYTES>();
+    pub fn keygen(&self, custom_zeta: Option<&[u8; ZETA_BYTES]>) -> ([u8; SIGNATURE_KEY_SIZE], [u8; PUBLIC_KEY_SIZE]) {
+        let zeta;
+
+        if let Some(custom_zeta) = custom_zeta {
+            zeta = *custom_zeta;
+        } else {
+            zeta = random_bytes::<ZETA_BYTES>();
+        }
+
         let seed_bytes = shake_256::<SEED_BYTES>(&zeta);
 
         let (rho, seed_bytes) = seed_bytes.split_at(32);
@@ -42,6 +49,7 @@ impl <
         t.caddq();
 
         let (t_zero, t_one) = t.power2round();
+
         let public_key = pack_public_key::<PUBLIC_KEY_SIZE, K>(rho, &t_one);
 
         let tr = shake_256::<TR_BYTES>(&public_key);

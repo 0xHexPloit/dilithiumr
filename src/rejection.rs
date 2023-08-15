@@ -18,6 +18,7 @@ pub fn rejection_uniform(
         coefficient_value |= (buffer[current_index] as i32 & 0xFF) << 8;
         current_index += 1;
         coefficient_value |= (buffer[current_index] as i32 & 0xFF) << 16;
+        current_index += 1;
         coefficient_value &= 0x7FFFFF; // Logical and between b2 and 2**128-1
 
         if coefficient_value < Q as i32 {
