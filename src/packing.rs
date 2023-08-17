@@ -163,7 +163,7 @@ pub fn pack_signature<
     signature
 }
 
-fn decode_h_from_signature<const K: usize, const OMEGA: usize>(
+fn decode_h_from_signature<const OMEGA: usize, const K: usize>(
     signature: &[u8],
     h: &mut PolyVec<K>,
 ) -> bool {
@@ -209,7 +209,7 @@ pub fn unpack_signature<
     signature: &'a [u8],
     c_tilde: &mut &'a [u8],
     z: &mut PolyVec<L>,
-    h: &mut PolyVec<K>,
+    h: &mut PolyVec<K>
 ) -> bool {
     let mut offset = 0;
 
@@ -221,21 +221,27 @@ pub fn unpack_signature<
     }
     offset += L * POLY_Z_PACKED_BYTES;
 
-    decode_h_from_signature::<K, OMEGA>(signature, h)
+    decode_h_from_signature::<OMEGA, K>(&signature[offset..], h)
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::constants::H_TEST;
-    use crate::packing::encode_h_in_signature;
+    use crate::algebra::vec::PolyVec;
+    use crate::constants::{H_TEST, SIGNATURE_H_PART};
+    use crate::packing::{decode_h_from_signature, encode_h_in_signature};
 
     #[test]
     fn test_should_produce_the_correct_h_encoding() {
         let mut signature = [0u8; 84];
         encode_h_in_signature::<80, 4>(&mut signature, &H_TEST);
 
-        const EXPECTED_SIGNATURE: [u8; 84] = [3, 31, 38, 39, 58, 59, 78, 79, 82, 130, 133, 148, 154, 179, 187, 201, 202, 205, 213, 222, 226, 249, 6, 30, 52, 75, 80, 132, 137, 138, 154, 158, 171, 195, 225, 238, 239, 30, 57, 66, 102, 140, 169, 173, 193, 202, 208, 210, 216, 227, 228, 229, 242, 247, 250, 24, 44, 75, 81, 84, 99, 112, 129, 141, 176, 178, 196, 198, 201, 204, 213, 217, 220, 230, 232, 255, 0, 0, 0, 0, 22, 37, 55, 76];
-        assert_eq!(signature, EXPECTED_SIGNATURE);
+        assert_eq!(signature, SIGNATURE_H_PART);
 
+    }
+    #[test]
+    fn test_should_retrieve_h_vec_from_signature() {
+        let mut h = PolyVec::<4>::default();
+        decode_h_from_signature::<80, 4>(&SIGNATURE_H_PART, &mut h);
+        assert_eq!(h, H_TEST);
     }
 }
