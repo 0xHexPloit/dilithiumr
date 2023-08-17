@@ -6,7 +6,8 @@ use crate::constants::{
 };
 use crate::helper::{random_bytes, shake_256};
 use crate::packing::{
-    pack_public_key, pack_signature, pack_signing_key, pack_w1, unpack_signing_key,
+    pack_public_key, pack_signature, pack_signing_key, pack_w1, unpack_public_key,
+    unpack_signature, unpack_signing_key,
 };
 
 pub struct Dilithium<
@@ -98,10 +99,15 @@ impl<
 
     pub fn sign(
         &self,
-        signing_key: &[u8; SIGNING_KEY_SIZE],
+        signing_key: &[u8],
         message: &[u8],
         randomized_signing: bool,
     ) -> [u8; SIGNATURE_SIZE] {
+        // Checking signing key
+        if signing_key.len() != SIGNING_KEY_SIZE {
+            panic!("Invalid length for signing key!")
+        }
+
         // Extracting data from signing key
         let mut rho: &[u8] = &[];
         let mut big_k: &[u8] = &[];
@@ -177,9 +183,10 @@ impl<
                 continue;
             }
 
-            vec += &w_zero;
+            vec += &r_zero;
 
             let mut h = PolyVec::<K>::default();
+
             let number_ones = PolyVec::<K>::make_hint::<GAMMA_TWO>(&mut h, &w_one, &vec);
 
             if number_ones > OMEGA {
@@ -192,5 +199,45 @@ impl<
                 );
             return signature;
         }
+    }
+
+    pub fn verify(&self, public_key: &[u8], message: &[u8], signature: &[u8]) -> bool {
+        // Checking public key
+        if public_key.len() != PUBLIC_KEY_SIZE {
+            panic!("Invalid length for public key !");
+        }
+
+        // Checking signature
+        if signature.len() != SIGNATURE_SIZE {
+            panic!("Invalid length for the signature !");
+        }
+
+        // Unpacking public key
+        let mut rho: &[u8] = &[];
+        let mut t_one: PolyVec<K> = PolyVec::<K>::default();
+
+        unpack_public_key(&public_key, &mut rho, &mut t_one);
+
+        let mut c_tilde: &[u8] = &[];
+        let mut z = PolyVec::<L>::default();
+        let mut h = PolyVec::<K>::default();
+
+        let malformed_signature = unpack_signature::<K, L, GAMMA_ONE, POLY_Z_PACKED_BYTES, OMEGA>(
+            &signature,
+            &mut c_tilde,
+            &mut z,
+            &mut h,
+        );
+
+        if malformed_signature {
+            return false;
+        }
+
+        // Starting the verification process
+        let a_matrix = PolyMatrix::<K, L>::expand_a(&rho);
+        let digest = shake_256::<32>(&[&public_key]);
+        let mu = shake_256::<MU_BYTES>(&[&digest, &message]);
+
+        true
     }
 }

@@ -412,7 +412,7 @@ impl Polynomial {
         }
     }
 
-    fn unpack_z<const GAMMA_ONE: usize>(buf: &[u8], poly: &mut Polynomial) {
+    pub fn unpack_z<const GAMMA_ONE: usize>(buf: &[u8], poly: &mut Polynomial) {
         if GAMMA_ONE == 1 << 17 {
             for i in 0..N / 4 {
                 poly[4 * i + 0] = buf[9 * i + 0] as i32;
@@ -455,6 +455,19 @@ impl Polynomial {
                 poly[2 * i + 0] = GAMMA_ONE as i32 - poly[2 * i + 0];
                 poly[2 * i + 1] = GAMMA_ONE as i32 - poly[2 * i + 1];
             }
+        }
+    }
+
+    pub fn unpack_t1(buf: &[u8], poly: &mut Polynomial) {
+        for i in 0..N / 4 {
+            poly[4 * i + 0] =
+                (((buf[5 * i + 0] as u32 >> 0) | ((buf[5 * i + 1] as u32) << 8)) & 0x3FF) as i32;
+            poly[4 * i + 1] =
+                (((buf[5 * i + 1] as u32 >> 2) | ((buf[5 * i + 2] as u32) << 6)) & 0x3FF) as i32;
+            poly[4 * i + 2] =
+                (((buf[5 * i + 2] as u32 >> 4) | ((buf[5 * i + 3] as u32) << 4)) & 0x3FF) as i32;
+            poly[4 * i + 3] =
+                (((buf[5 * i + 3] as u32 >> 6) | ((buf[5 * i + 4] as u32) << 2)) & 0x3FF) as i32;
         }
     }
 
