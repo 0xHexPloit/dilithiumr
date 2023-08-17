@@ -105,7 +105,7 @@ pub fn unpack_signing_key<'a, const K: usize, const L: usize, const ETA: usize>(
     offset += K * poly_eta_bytes;
 
     for i in 0..K {
-        Polynomial::unpack_t0(&mut t_zero[i], &signing_key[offset + i * poly_eta_bytes..])
+        Polynomial::unpack_t0(&mut t_zero[i], &signing_key[offset + i * POLY_T0_PACKED_BYTES..])
     }
 }
 
@@ -209,7 +209,7 @@ pub fn unpack_signature<
     signature: &'a [u8],
     c_tilde: &mut &'a [u8],
     z: &mut PolyVec<L>,
-    h: &mut PolyVec<K>
+    h: &mut PolyVec<K>,
 ) -> bool {
     let mut offset = 0;
 
@@ -228,7 +228,7 @@ pub fn unpack_signature<
 mod tests {
     use crate::algebra::vec::PolyVec;
     use crate::constants::{H_TEST, SIGNATURE_H_PART};
-    use crate::packing::{decode_h_from_signature, encode_h_in_signature};
+    use crate::packing::{decode_h_from_signature, encode_h_in_signature, unpack_signing_key};
 
     #[test]
     fn test_should_produce_the_correct_h_encoding() {
@@ -236,7 +236,6 @@ mod tests {
         encode_h_in_signature::<80, 4>(&mut signature, &H_TEST);
 
         assert_eq!(signature, SIGNATURE_H_PART);
-
     }
     #[test]
     fn test_should_retrieve_h_vec_from_signature() {
