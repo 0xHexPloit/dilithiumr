@@ -6,8 +6,8 @@ pub fn rejection_uniform(
     remaining_coefficients: usize,
     offset: usize,
     buffer: &[u8],
-    buffer_len: usize
-) -> usize{
+    buffer_len: usize,
+) -> usize {
     let mut counter = 0;
     let mut current_index = 0;
 
@@ -35,7 +35,7 @@ pub fn rejection_eta<const ETA: usize>(
     remaining_coefficients: usize,
     offset: usize,
     buffer: &[u8],
-    buffer_len: usize
+    buffer_len: usize,
 ) -> usize {
     let mut counter = 0;
     let mut current_index = 0;

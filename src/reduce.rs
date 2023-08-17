@@ -26,10 +26,10 @@ pub fn caddq(val: i32) -> i32 {
 
 #[cfg(test)]
 mod tests {
-    use rand::distributions::{Distribution, Uniform};
-    use rand::thread_rng;
     use crate::constants::Q;
     use crate::reduce::{caddq, montgomery_reduce, reduce32};
+    use rand::distributions::{Distribution, Uniform};
+    use rand::thread_rng;
 
     #[test]
     fn test_should_output_the_correct_residue() {
@@ -39,9 +39,8 @@ mod tests {
         let output = montgomery_reduce(z_value as i64);
 
         assert_eq!(residue as i32, output.rem_euclid(Q as i32));
-        assert!(output.unsigned_abs() <= (z_value as u64 >> 32) as u32  + (Q >> 2u32))
+        assert!(output.unsigned_abs() <= (z_value as u64 >> 32) as u32 + (Q >> 2u32))
     }
-
 
     #[test]
     fn test_should_output_a_value_that_respects_the_reduce_constraints() {
@@ -54,7 +53,6 @@ mod tests {
             assert_eq!(val.rem_euclid(Q as i32), output.rem_euclid(Q as i32));
             assert!(-6283009 <= output && output <= 6283007)
         })
-
     }
 
     #[test]
