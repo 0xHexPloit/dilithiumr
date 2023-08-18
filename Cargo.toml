@@ -7,7 +7,9 @@ author = "Hugo PEYRON"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = "0.8.5"
+getrandom = { version = "0.2.10", features = ["js"] }
+rand = { version = "0.8.5" }
 sha3 = "0.10.8"
+wai-bindgen-rust = "0.2.3"
 
 [features]
