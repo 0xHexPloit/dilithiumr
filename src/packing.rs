@@ -105,7 +105,10 @@ pub fn unpack_signing_key<'a, const K: usize, const L: usize, const ETA: usize>(
     offset += K * poly_eta_bytes;
 
     for i in 0..K {
-        Polynomial::unpack_t0(&mut t_zero[i], &signing_key[offset + i * POLY_T0_PACKED_BYTES..])
+        Polynomial::unpack_t0(
+            &mut t_zero[i],
+            &signing_key[offset + i * POLY_T0_PACKED_BYTES..],
+        )
     }
 }
 
@@ -227,20 +230,43 @@ pub fn unpack_signature<
 #[cfg(test)]
 mod tests {
     use crate::algebra::vec::PolyVec;
-    use crate::constants::{H_TEST, SIGNATURE_H_PART};
-    use crate::packing::{decode_h_from_signature, encode_h_in_signature, unpack_signing_key};
+    use crate::constants::{H_TEST, SIGNATURE_TEST, Z_TEST};
+    use crate::packing::{decode_h_from_signature, encode_h_in_signature, unpack_signature};
 
     #[test]
     fn test_should_produce_the_correct_h_encoding() {
         let mut signature = [0u8; 84];
         encode_h_in_signature::<80, 4>(&mut signature, &H_TEST);
 
-        assert_eq!(signature, SIGNATURE_H_PART);
+        assert_eq!(signature, &SIGNATURE_TEST[2420 - 84..]);
     }
     #[test]
     fn test_should_retrieve_h_vec_from_signature() {
         let mut h = PolyVec::<4>::default();
-        decode_h_from_signature::<80, 4>(&SIGNATURE_H_PART, &mut h);
+        decode_h_from_signature::<80, 4>(&SIGNATURE_TEST[2420 - 84..], &mut h);
         assert_eq!(h, H_TEST);
+    }
+
+    #[test]
+    fn test_should_unpack_correctly_the_signature() {
+        let mut c_tilde: &[u8] = &[];
+        let mut z = PolyVec::<4>::default();
+        let mut h = PolyVec::<4>::default();
+
+        unpack_signature::<4, 4, { 1 << 17 }, 576, 80>(
+            &SIGNATURE_TEST,
+            &mut c_tilde,
+            &mut z,
+            &mut h,
+        );
+
+        let expected_c_tilde = [
+            54, 211, 27, 76, 164, 88, 109, 33, 79, 81, 101, 202, 49, 232, 176, 182, 50, 241, 168,
+            54, 127, 48, 227, 237, 36, 198, 199, 179, 46, 124, 202, 103,
+        ];
+
+        assert_eq!(c_tilde, expected_c_tilde);
+        assert_eq!(z, Z_TEST);
+        assert_eq!(h, H_TEST)
     }
 }

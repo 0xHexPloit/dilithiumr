@@ -6,7 +6,7 @@ use crate::conversion::u16_to_bytes_le;
 use crate::helper::{shake_128_reader, shake_256_reader};
 use crate::reduce::{caddq, montgomery_reduce, reduce32};
 use crate::rejection::{rejection_eta, rejection_uniform};
-use crate::rounding::{decompose, make_hint, power2round};
+use crate::rounding::{decompose, make_hint, power2round, use_hint};
 use sha3::digest::XofReader;
 use std::ops::{AddAssign, Index, IndexMut, Mul, Sub};
 
@@ -504,16 +504,22 @@ impl Polynomial {
         false
     }
 
+    /// This function fills a hint polynomial
+    ///
+    /// # Arguments
+    /// * `poly` - The hint polynomial to be filled
+    /// * `poly_zero` - The low part of an input polynomial
+    /// * `poly_one` - The high part of an input polynomial
     pub fn make_hint<const GAMMA_TWO: usize>(
-        output_poly: &mut Polynomial,
-        poly_one: &Polynomial,
+        poly: &mut Polynomial,
         poly_zero: &Polynomial,
+        poly_one: &Polynomial,
     ) -> usize {
         let mut number_ones = 0;
 
         for i in 0..N {
-            output_poly[i] = make_hint::<GAMMA_TWO>(poly_zero[i], poly_one[i]);
-            number_ones += output_poly[i]
+            poly[i] = make_hint::<GAMMA_TWO>(poly_zero[i], poly_one[i]);
+            number_ones += poly[i]
         }
 
         number_ones as usize
@@ -555,6 +561,32 @@ impl Polynomial {
         }
 
         poly
+    }
+
+    /// This functions multiplies polynomial by 2^D without modular reduction. The latter assumes
+    /// input coefficients to be less than 2^{31-D} in absolute value.
+    pub fn shiftl(&mut self) {
+        for i in 0..N {
+            self[i] <<= D;
+        }
+    }
+
+    /// This function uses the hint polynomial to correct the high bits of input polynomial and
+    /// fills the output polynomial with the correction.
+    ///
+    /// # Arguments
+    ///
+    /// * `h` - A hint polynomial
+    /// * `vec` - A polynomial for which we should correct the high bits.
+    /// * `poly` - A poly that will be filled with the correction
+    pub fn use_hint<const GAMMA_TWO: usize>(
+        h: &Polynomial,
+        vec: &Polynomial,
+        poly: &mut Polynomial,
+    ) {
+        for i in 0..N {
+            poly[i] = use_hint::<GAMMA_TWO>(vec[i], h[i] as u32);
+        }
     }
 }
 
@@ -714,7 +746,7 @@ mod tests {
         let mut t_0 = PolyVec::<4>::default();
 
         for i in 0..4 {
-            Polynomial::unpack_t0(&mut t_0[i],&t0_packed_bytes[i * POLY_T0_PACKED_BYTES..], );
+            Polynomial::unpack_t0(&mut t_0[i], &t0_packed_bytes[i * POLY_T0_PACKED_BYTES..]);
         }
 
         let expected_t0 = PolyVec::<4> {
