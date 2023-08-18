@@ -20,6 +20,21 @@ pub fn pack_public_key<const N: usize, const K: usize>(rho: &[u8], t_one: &PolyV
     public_key
 }
 
+pub fn unpack_public_key<'a, const K: usize>(
+    public_key: &'a [u8],
+    rho: &mut &'a [u8],
+    vec: &mut PolyVec<K>,
+) {
+    *rho = public_key[..RHO_BYTES].as_ref();
+
+    for i in 0..K {
+        Polynomial::unpack_t1(
+            &public_key[RHO_BYTES + i * POLY_T1_PACKED_BYTES..],
+            &mut vec[i],
+        );
+    }
+}
+
 pub fn pack_signing_key<const N: usize, const K: usize, const L: usize, const ETA: usize>(
     rho: &[u8],
     big_k: &[u8],
@@ -90,7 +105,10 @@ pub fn unpack_signing_key<'a, const K: usize, const L: usize, const ETA: usize>(
     offset += K * poly_eta_bytes;
 
     for i in 0..K {
-        Polynomial::unpack_t0(&mut t_zero[i], &signing_key[offset + i * poly_eta_bytes..])
+        Polynomial::unpack_t0(
+            &mut t_zero[i],
+            &signing_key[offset + i * POLY_T0_PACKED_BYTES..],
+        )
     }
 }
 
@@ -146,4 +164,109 @@ pub fn pack_signature<
     encode_h_in_signature::<OMEGA, K>(&mut signature[offset..], h);
 
     signature
+}
+
+fn decode_h_from_signature<const OMEGA: usize, const K: usize>(
+    signature: &[u8],
+    h: &mut PolyVec<K>,
+) -> bool {
+    let mut k = 0;
+
+    for i in 0..K {
+        if signature[OMEGA + i] < k || signature[OMEGA + i] > OMEGA as u8 {
+            // The signature is malformed
+            return true;
+        }
+
+        for j in k..signature[OMEGA + i] {
+            // Coefficients are ordered for strong unforgeability
+
+            if j > k && signature[j as usize] <= signature[j as usize - 1] {
+                return true;
+            }
+
+            h[i][signature[j as usize] as usize] = 1;
+        }
+
+        k = signature[OMEGA + i];
+    }
+
+    // Extra indices are zero for strong unforgeability
+    for j in k..OMEGA as u8 {
+        if signature[j as usize] != 0 {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+pub fn unpack_signature<
+    'a,
+    const K: usize,
+    const L: usize,
+    const GAMMA_ONE: usize,
+    const POLY_Z_PACKED_BYTES: usize,
+    const OMEGA: usize,
+>(
+    signature: &'a [u8],
+    c_tilde: &mut &'a [u8],
+    z: &mut PolyVec<L>,
+    h: &mut PolyVec<K>,
+) -> bool {
+    let mut offset = 0;
+
+    *c_tilde = signature[..C_TILDE_BYTES].as_ref();
+    offset += C_TILDE_BYTES;
+
+    for i in 0..L {
+        Polynomial::unpack_z::<GAMMA_ONE>(&signature[offset + i * POLY_Z_PACKED_BYTES..], &mut z[i])
+    }
+    offset += L * POLY_Z_PACKED_BYTES;
+
+    decode_h_from_signature::<OMEGA, K>(&signature[offset..], h)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::algebra::vec::PolyVec;
+    use crate::constants::{H_TEST, SIGNATURE_TEST, Z_TEST};
+    use crate::packing::{decode_h_from_signature, encode_h_in_signature, unpack_signature};
+
+    #[test]
+    fn test_should_produce_the_correct_h_encoding() {
+        let mut signature = [0u8; 84];
+        encode_h_in_signature::<80, 4>(&mut signature, &H_TEST);
+
+        assert_eq!(signature, &SIGNATURE_TEST[2420 - 84..]);
+    }
+    #[test]
+    fn test_should_retrieve_h_vec_from_signature() {
+        let mut h = PolyVec::<4>::default();
+        decode_h_from_signature::<80, 4>(&SIGNATURE_TEST[2420 - 84..], &mut h);
+        assert_eq!(h, H_TEST);
+    }
+
+    #[test]
+    fn test_should_unpack_correctly_the_signature() {
+        let mut c_tilde: &[u8] = &[];
+        let mut z = PolyVec::<4>::default();
+        let mut h = PolyVec::<4>::default();
+
+        unpack_signature::<4, 4, { 1 << 17 }, 576, 80>(
+            &SIGNATURE_TEST,
+            &mut c_tilde,
+            &mut z,
+            &mut h,
+        );
+
+        let expected_c_tilde = [
+            54, 211, 27, 76, 164, 88, 109, 33, 79, 81, 101, 202, 49, 232, 176, 182, 50, 241, 168,
+            54, 127, 48, 227, 237, 36, 198, 199, 179, 46, 124, 202, 103,
+        ];
+
+        assert_eq!(c_tilde, expected_c_tilde);
+        assert_eq!(z, Z_TEST);
+        assert_eq!(h, H_TEST)
+    }
 }

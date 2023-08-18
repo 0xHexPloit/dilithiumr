@@ -56,6 +56,41 @@ pub fn make_hint<const GAMMA_TWO: usize>(a0: i32, a1: i32) -> i32 {
     };
 }
 
+/// This function corrects the high bits according to hint and returns corrected high bits
+///
+/// # Arguments
+/// * `a` - A coefficient to be corrected
+/// * `hint` - A hint bit
+pub fn use_hint<const GAMMA_TWO: usize>(a: i32, hint: u32) -> i32 {
+    let (a_zero, a_one) = decompose::<GAMMA_TWO>(a);
+
+    if hint == 0 {
+        return a_one;
+    }
+
+    return if GAMMA_TWO == ((Q - 1) / 32) as usize {
+        if a_zero > 0 {
+            (a_one + 1) & 15
+        } else {
+            (a_one - 1) & 15
+        }
+    } else {
+        if a_zero > 0 {
+            if a_one == 43 {
+                0
+            } else {
+                a_one + 1
+            }
+        } else {
+            if a_one == 0 {
+                43
+            } else {
+                a_one - 1
+            }
+        }
+    };
+}
+
 #[cfg(test)]
 mod tests {
     use crate::rounding::power2round;
