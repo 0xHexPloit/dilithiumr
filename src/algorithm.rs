@@ -190,8 +190,7 @@ impl<
             let mut h = PolyVec::<K>::default();
 
             let number_ones = PolyVec::<K>::make_hint::<GAMMA_TWO>(&mut h, &vec, &w_one);
-
-            println!("Test vec: {:?}", vec);
+            
             if number_ones > OMEGA {
                 continue;
             }
@@ -270,10 +269,10 @@ impl<
 
 #[cfg(test)]
 mod tests {
-    use rand::distributions::{Uniform, Distribution};
-    use rand::{Rng, thread_rng};
     use crate::constants::{PUBLIC_KEY_TEST, SIGNATURE_TEST, SIGNING_KEY_TEST};
     use crate::DILITHIUM2;
+    use rand::distributions::{Distribution, Uniform};
+    use rand::{thread_rng, Rng};
 
     const SEED: [u8; 32] = [0u8; 32];
 
@@ -284,7 +283,6 @@ mod tests {
         assert_eq!(sk, SIGNING_KEY_TEST);
         assert_eq!(pk, PUBLIC_KEY_TEST);
     }
-
 
     #[test]
     fn test_it_should_produce_the_correct_signature() {
@@ -322,12 +320,14 @@ mod tests {
             let mut signature = DILITHIUM2.sign(&sk, &message, false);
 
             let mut random_data = [0u8; 100];
-            random_data.iter_mut().for_each(|val| *val = rng.gen::<u8>());
+            random_data
+                .iter_mut()
+                .for_each(|val| *val = rng.gen::<u8>());
 
             let dist = Uniform::from(0..2320);
             let random_position = dist.sample(&mut rng) as usize;
 
-            signature[random_position..random_position+100].copy_from_slice(&random_data);
+            signature[random_position..random_position + 100].copy_from_slice(&random_data);
 
             let check = DILITHIUM2.verify(&pk, &message, &signature);
             assert_eq!(check, false);
