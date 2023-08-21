@@ -191,7 +191,6 @@ impl<
 
             let number_ones = PolyVec::<K>::make_hint::<GAMMA_TWO>(&mut h, &vec, &w_one);
 
-            println!("Test vec: {:?}", vec);
             if number_ones > OMEGA {
                 continue;
             }
